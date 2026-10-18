@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sidequest</title>
+<meta name="description" content="Bored? Answer a few questions and get something to do with your friends.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --text: #1d1b18; --muted: #6b665d;
+    --line: #e4e0d8; --accent: #e8590c; --accent-text: #fff; --chip: #efece6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141312; --card: #1f1d1b; --text: #f2efe9; --muted: #a39e95;
+      --line: #34312d; --accent: #ff7a33; --accent-text: #1a0d05; --chip: #2a2825;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center; padding: 32px 16px 48px;
+  }
+  main { width: 100%; max-width: 520px; }
+  h1 { font-size: 2.2rem; margin: 0; letter-spacing: -0.02em; }
+  .tagline { color: var(--muted); margin: 4px 0 28px; }
+  fieldset { border: 0; margin: 0 0 20px; padding: 0; }
+  legend { font-weight: 600; margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips label {
+    padding: 8px 14px; border-radius: 999px; background: var(--chip);
+    border: 1px solid var(--line); cursor: pointer; user-select: none;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .chips input:checked + label { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .chips input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.go {
+    width: 100%; margin-top: 8px; padding: 16px; font: inherit; font-weight: 700; font-size: 1.1rem;
+    border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-text); cursor: pointer;
+    transition: transform .1s;
+  }
+  button.go:active { transform: scale(.98); }
+  #result {
+    margin-top: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 28px 24px; text-align: center; min-height: 170px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  #result.pop { animation: pop .35s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #result.pop { animation: none; } }
+  .emoji { font-size: 3rem; line-height: 1; }
+  .name { font-size: 1.4rem; font-weight: 700; margin: 12px 0 6px; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .count { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🧭 Sidequest</h1>
+  <p class="tagline">Bored? Tell us your situation and we'll pick something to do.</p>
+
+  <form id="f">
+    <fieldset>
+      <legend>Got a car?</legend>
+      <div class="chips">
+        <input type="radio" name="car" id="car1" value="1" checked><label for="car1">🚗 Yes</label>
+        <input type="radio" name="car" id="car0" value="0"><label for="car0">🚶 No</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>What time is it?</legend>
+      <div class="chips">
+        <input type="radio" name="time" id="tm" value="m"><label for="tm">🌅 Morning</label>
+        <input type="radio" name="time" id="ta" value="a"><label for="ta">☀️ Afternoon</label>
+        <input type="radio" name="time" id="te" value="e"><label for="te">🌇 Evening</label>
+        <input type="radio" name="time" id="tn" value="n"><label for="tn">🌙 Late night</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Budget</legend>
+      <div class="chips">
+        <input type="radio" name="cost" id="c0" value="0"><label for="c0">Free</label>
+        <input type="radio" name="cost" id="c1" value="1" checked><label for="c1">Cheap</label>
+        <input type="radio" name="cost" id="c2" value="2"><label for="c2">Treat ourselves</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Inside or outside?</legend>
+      <div class="chips">
+        <input type="radio" name="place" id="pb" value="" checked><label for="pb">Either</label>
+        <input type="radio" name="place" id="pi" value="i"><label for="pi">🏠 Inside</label>
+        <input type="radio" name="place" id="po" value="o"><label for="po">🌳 Outside</label>
+      </div>
+    </fieldset>
+    <button class="go" type="submit">Give us a sidequest</button>
+  </form>
+
+  <section id="result" aria-live="polite">
+    <div class="emoji">🎲</div>
+    <div class="meta">Your sidequest will show up here.</div>
+  </section>
+  <p class="count" id="count"></p>
+</main>
+
+<script>
+// [name, emoji, needsCar, times (m=morning a=afternoon e=evening n=night), cost (0 free, 1 cheap, 2 pricey), place (i/o)]
+const A = [
+  ["Sunrise hike at a nearby trail", "🥾", 1, "m", 0, "o"],
+  ["Diner breakfast run", "🥞", 1, "mn", 1, "i"],
+  ["Farmers market crawl", "🧺", 1, "m", 1, "o"],
+  ["Pickup basketball at the park", "🏀", 0, "mae", 0, "o"],
+  ["Make a giant pancake breakfast at home", "🍳", 0, "m", 1, "i"],
+  ["Walk to a coffee shop you've never tried", "☕", 0, "ma", 1, "i"],
+  ["Thrift store challenge: $5 outfit for each other", "👕", 1, "ma", 1, "i"],
+  ["Drive to the nearest beach or lake", "🏖️", 1, "ma", 0, "o"],
+  ["Frisbee or spikeball at the park", "🥏", 0, "mae", 0, "o"],
+  ["Bike ride somewhere new", "🚲", 0, "ma", 0, "o"],
+  ["Go fishing", "🎣", 1, "ma", 1, "o"],
+  ["Kayak or paddleboard rental", "🛶", 1, "ma", 2, "o"],
+  ["Visit a museum", "🖼️", 1, "ma", 1, "i"],
+  ["Mini golf tournament", "⛳", 1, "ae", 1, "o"],
+  ["Bowling night", "🎳", 1, "aen", 2, "i"],
+  ["Arcade with a $10 limit each", "🕹️", 1, "aen", 1, "i"],
+  ["Go-karts", "🏎️", 1, "ae", 2, "o"],
+  ["Trampoline park", "🤸", 1, "a", 2, "i"],
+  ["Rock climbing gym day pass", "🧗", 1, "ae", 2, "i"],
+  ["Escape room", "🔐", 1, "ae", 2, "i"],
+  ["Laser tag", "🔫", 1, "ae", 2, "i"],
+  ["Drive-in or dollar movie", "🎬", 1, "en", 1, "i"],
+  ["Movie marathon with homemade snacks", "🍿", 0, "aen", 0, "i"],
+  ["Board game tournament", "🎲", 0, "aen", 0, "i"],
+  ["Video game tournament with a bracket", "🎮", 0, "aen", 0, "i"],
+  ["Cook a meal together from a random recipe", "🍝", 0, "ae", 1, "i"],
+  ["Bake cookies and deliver them to friends", "🍪", 0, "ae", 1, "i"],
+  ["Build a blanket fort", "🏰", 0, "en", 0, "i"],
+  ["Stargazing away from city lights", "🌌", 1, "n", 0, "o"],
+  ["Late-night drive with a shared playlist", "🎶", 1, "n", 0, "i"],
+  ["Midnight fast-food run", "🍟", 1, "n", 1, "i"],
+  ["24-hour diner hangout", "🌙", 1, "n", 1, "i"],
+  ["Campfire and s'mores", "🔥", 1, "en", 1, "o"],
+  ["Backyard bonfire", "🪵", 0, "en", 1, "o"],
+  ["Karaoke night at home", "🎤", 0, "en", 0, "i"],
+  ["Watch the sunset from a high spot", "🌇", 1, "e", 0, "o"],
+  ["Picnic in the park", "🧃", 0, "a", 1, "o"],
+  ["Explore a town you've never been to", "🗺️", 1, "ma", 1, "o"],
+  ["Road trip to the next city over", "🛣️", 1, "m", 2, "o"],
+  ["Find the best taco spot in town", "🌮", 1, "ae", 1, "i"],
+  ["Ice cream taste test", "🍦", 0, "ae", 1, "i"],
+  ["Gas station snack challenge: $3 each", "🥤", 0, "aen", 1, "i"],
+  ["Photo scavenger hunt around the neighborhood", "📸", 0, "ma", 0, "o"],
+  ["Geocaching", "📍", 1, "ma", 0, "o"],
+  ["Go to a high school or local sports game", "🏈", 1, "ae", 1, "o"],
+  ["Batting cages", "⚾", 1, "ae", 1, "o"],
+  ["Driving range", "🏌️", 1, "ae", 1, "o"],
+  ["Skate park session", "🛹", 0, "mae", 0, "o"],
+  ["Swim at a public pool", "🏊", 0, "a", 1, "o"],
+  ["Water balloon fight", "🎈", 0, "a", 1, "o"],
+  ["Paint or draw each other badly", "🎨", 0, "aen", 0, "i"],
+  ["Paint-your-own pottery", "🏺", 1, "ae", 2, "i"],
+  ["Make a short film on your phones", "🎥", 0, "ae", 0, "o"],
+  ["Start a group podcast episode", "🎙️", 0, "aen", 0, "i"],
+  ["Learn a TikTok dance together", "💃", 0, "aen", 0, "i"],
+  ["Have a cook-off with a mystery ingredient", "👨‍🍳", 0, "ae", 1, "i"],
+  ["Visit a zoo or aquarium", "🐠", 1, "ma", 2, "o"],
+  ["Hit up a trivia night", "🧠", 1, "e", 1, "i"],
+  ["Go to a free local concert or open mic", "🎸", 1, "en", 0, "i"],
+  ["Browse a bookstore and pick books for each other", "📚", 0, "a", 1, "i"],
+  ["Visit the library and play their games", "🏛️", 0, "ma", 0, "i"],
+  ["Volunteer at an animal shelter", "🐶", 1, "ma", 0, "i"],
+  ["Pick up trash at a park and get food after", "🧤", 0, "ma", 1, "o"],
+  ["Tour open houses in a fancy neighborhood", "🏡", 1, "a", 0, "i"],
+  ["Mall walk and try on ridiculous outfits", "🛍️", 1, "ae", 0, "i"],
+  ["Go to a car meet", "🚙", 1, "en", 0, "o"],
+  ["Try a new cuisine none of you have had", "🍜", 1, "ae", 2, "i"],
+  ["Hot pot or Korean BBQ", "🥩", 1, "en", 2, "i"],
+  ["All-you-can-eat sushi", "🍣", 1, "ae", 2, "i"],
+  ["Make homemade pizza", "🍕", 0, "ae", 1, "i"],
+  ["Poker night with snacks as chips", "🃏", 0, "en", 0, "i"],
+  ["Murder mystery party", "🕵️", 0, "en", 0, "i"],
+  ["Ghost story night with the lights off", "👻", 0, "n", 0, "i"],
+  ["Visit a supposedly haunted spot", "🏚️", 1, "n", 0, "o"],
+  ["Night walk with flashlights", "🔦", 0, "n", 0, "o"],
+  ["Go to a 24-hour store and build a meal under $10", "🛒", 1, "n", 1, "i"],
+  ["Sleepover with a movie theme", "🛏️", 0, "n", 0, "i"],
+  ["Play capture the flag at the park", "🚩", 0, "ae", 0, "o"],
+  ["Pickup soccer", "⚽", 0, "mae", 0, "o"],
+  ["Tennis or pickleball at public courts", "🎾", 0, "mae", 0, "o"],
+  ["Ultimate tag or hide and seek, but competitive", "🏃", 0, "en", 0, "o"],
+  ["Chalk art on the driveway", "🖍️", 0, "ma", 0, "o"],
+  ["Plant something together", "🌱", 0, "ma", 1, "o"],
+  ["Cloud watching and doing nothing", "☁️", 0, "a", 0, "o"],
+  ["Wash and detail someone's car", "🧽", 0, "ma", 1, "o"],
+  ["Bowling alley glow night", "✨", 1, "n", 2, "i"],
+  ["Roller skating rink", "🛼", 1, "ae", 1, "i"],
+  ["Ice skating", "⛸️", 1, "ae", 2, "i"],
+  ["Visit a state park", "🏞️", 1, "ma", 1, "o"],
+  ["Find a waterfall or swimming hole", "💦", 1, "ma", 0, "o"],
+  ["Go to an amusement park", "🎢", 1, "m", 2, "o"],
+  ["Try every flavor at a boba shop", "🧋", 0, "ae", 1, "i"],
+  ["Make friendship bracelets", "🧶", 0, "aen", 0, "i"],
+  ["Rank every chip flavor from the store", "🥔", 0, "aen", 1, "i"],
+  ["Watch the worst-rated movie you can find", "📼", 0, "en", 0, "i"],
+  ["Pick a random spot on the map and drive there", "🎯", 1, "ma", 1, "o"],
+  ["Go to a hockey or minor league game", "🏒", 1, "e", 2, "i"],
+  ["Attend a local festival or fair", "🎡", 1, "ae", 1, "o"],
+  ["Spa night with face masks", "🧖", 0, "en", 1, "i"],
+  ["Write and swap terrible poems", "✍️", 0, "aen", 0, "i"],
+  ["Learn a card trick each and perform them", "🪄", 0, "aen", 0, "i"],
+];
+
+const f = document.getElementById("f"), out = document.getElementById("result"), count = document.getElementById("count");
+
+// Preselect the current time of day
+const h = new Date().getHours();
+document.getElementById(h >= 5 && h < 12 ? "tm" : h < 17 && h >= 12 ? "ta" : h >= 17 && h < 21 ? "te" : "tn").checked = true;
+
+let last = -1;
+
+function matches() {
+  const d = new FormData(f), car = d.get("car") === "1", time = d.get("time"),
+        cost = +d.get("cost"), place = d.get("place");
+  return A.filter(([, , needCar, times, c, p]) =>
+    (car || !needCar) && times.includes(time) && c <= cost && (!place || p === place));
+}
+
+function updateCount() {
+  const n = matches().length;
+  count.textContent = n ? `${n} sidequests match` : "Nothing matches. Try loosening a filter.";
+}
+
+f.addEventListener("change", updateCount);
+f.addEventListener("submit", e => {
+  e.preventDefault();
+  const list = matches();
+  if (!list.length) {
+    out.innerHTML = `<div class="emoji">🤷</div><div class="name">Nothing fits</div><div class="meta">Try a bigger budget or a different time.</div>`;
+  } else {
+    let i;
+    do i = Math.floor(Math.random() * list.length); while (list.length > 1 && A.indexOf(list[i]) === last);
+    const [name, emoji, needCar, , c, p] = list[i];
+    last = A.indexOf(list[i]);
+    const tags = [["Free", "Cheap", "$$"][c], p === "i" ? "Inside" : "Outside", needCar ? "Needs a car" : "No car needed"];
+    out.innerHTML = `<div class="emoji">${emoji}</div><div class="name">${name}</div><div class="meta">${tags.join(" · ")}</div>`;
+    f.querySelector(".go").textContent = "Try another";
+  }
+  out.classList.remove("pop"); void out.offsetWidth; out.classList.add("pop");
+});
+
+updateCount();
+</script>
+</body>
+</html>
